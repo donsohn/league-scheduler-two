@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>League Scheduler #2</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <span class="site-title">League Scheduler #2</span>
+    <nav class="tab-nav" role="tablist">
+      <button class="tab-btn active" data-tab="setup" role="tab" aria-selected="true">Setup</button>
+      <button class="tab-btn" data-tab="schedule" role="tab" aria-selected="false">Schedule</button>
+      <button class="tab-btn" data-tab="standings" role="tab" aria-selected="false">Standings</button>
+      <button class="tab-btn" data-tab="playoffs" role="tab" aria-selected="false">Playoffs</button>
+      <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ══════════════════════ SETUP TAB ══════════════════════════════════════ -->
+  <section class="tab-pane active" id="tab-setup">
+    <div class="card">
+      <h2>Season Configuration</h2>
+
+      <div class="form-group">
+        <label for="leagueName">League Name</label>
+        <input type="text" id="leagueName" placeholder="e.g. Tuesday Night Volleyball">
+      </div>
+
+      <div class="form-group">
+        <label>Format</label>
+        <div class="radio-row">
+          <label class="radio-label">
+            <input type="radio" name="format" id="formatRR" value="roundrobin" checked>
+            Round Robin
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="format" id="formatDiv" value="divisional">
+            Divisional
+          </label>
+        </div>
+      </div>
+
+      <!-- Round-robin teams textarea -->
+      <div id="rrTeamsSection" class="form-group">
+        <label for="teamsTextarea">Teams <small>(one per line)</small></label>
+        <textarea id="teamsTextarea" rows="6" placeholder="Team Alpha&#10;Team Beta&#10;Team Gamma&#10;Team Delta"></textarea>
+      </div>
+
+      <!-- Divisional config -->
+      <div id="divisionalSection" class="hidden">
+        <div class="section-header">
+          <h3>Divisions</h3>
+          <button type="button" class="btn-small" id="addDivisionBtn">+ Add Division</button>
+        </div>
+        <p class="hint">Add divisions and list team names (one per line) for each.</p>
+        <div id="divisionsList"></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="startDate">Start Date</label>
+          <input type="date" id="startDate">
+        </div>
+        <div class="form-group">
+          <label for="endDate">End Date</label>
+          <input type="date" id="endDate">
+        </div>
+        <div class="form-group">
+          <label for="gameDay">Game Day</label>
+          <select id="gameDay">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday" selected>Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="firstGameTime">Start Time</label>
+          <input type="time" id="firstGameTime" value="18:00">
+        </div>
+        <div class="form-group">
+          <label for="slotDuration">Slot Duration (min)</label>
+          <input type="number" id="slotDuration" value="60" min="15" max="240">
+        </div>
+      </div>
+
+      <!-- Venues -->
+      <div class="section-header">
+        <h3>Venues</h3>
+        <button type="button" class="btn-small" id="addVenueBtn">+ Add Venue</button>
+      </div>
+      <div id="venuesList"></div>
+
+      <!-- Playoff dates -->
+      <div class="section-header">
+        <h3>Playoff Dates</h3>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="playoffNight1">Playoff Night 1</label>
+          <input type="date" id="playoffNight1">
+        </div>
+        <div class="form-group">
+          <label for="playoffNight2">Playoff Night 2</label>
+          <input type="date" id="playoffNight2">
+        </div>
+      </div>
+
+      <!-- Blackout dates -->
+      <div class="section-header">
+        <h3>Blackout Dates</h3>
+      </div>
+      <div class="form-group">
+        <label for="blackoutDates">Dates to skip <small>(one YYYY-MM-DD per line)</small></label>
+        <textarea id="blackoutDates" rows="3" placeholder="2025-12-25&#10;2026-01-01"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="extraMatches">
+          Extra Matches (fill remaining court slots)
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-primary" id="generateBtn">Generate Schedule</button>
+        <button type="button" class="btn-secondary" id="loadStateBtn">Load State</button>
+        <button type="button" class="btn-secondary" id="saveStateBtn">Save State</button>
+        <span id="setupStatus" class="status-msg"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ SCHEDULE TAB ═══════════════════════════════════ -->
+  <section class="tab-pane" id="tab-schedule">
+    <div class="sub-tab-bar">
+      <button class="sub-tab-btn active" data-subtab="bynight">By Night</button>
+      <button class="sub-tab-btn" data-subtab="byteam">By Team</button>
+    </div>
+
+    <!-- By Night -->
+    <div id="subtab-bynight" class="sub-tab-content">
+      <div id="scheduleWeeks"></div>
+    </div>
+
+    <!-- By Team -->
+    <div id="subtab-byteam" class="sub-tab-content hidden">
+      <div class="card">
+        <div class="form-group">
+          <label for="teamSelect">Select Team</label>
+          <select id="teamSelect">
+            <option value="">-- Select a team --</option>
+          </select>
+        </div>
+        <div id="teamMatchesContainer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ STANDINGS TAB ══════════════════════════════════ -->
+  <section class="tab-pane" id="tab-standings">
+    <div class="card">
+      <div class="standings-header">
+        <h2>Standings</h2>
+        <button class="btn-secondary" id="refreshStandingsBtn">Refresh</button>
+      </div>
+      <div id="standingsContainer"></div>
+    </div>
+
+    <div id="seasonStandingsSection" class="hidden">
+      <div class="card">
+        <h3>Season Standings &amp; Playoff Seeding</h3>
+        <p class="hint">Average division rank across all finalized weeks. Lower average = better seed. Tiebreak by total Pts.</p>
+        <div id="seasonStandingsContainer"></div>
+      </div>
+    </div>
+
+    <div id="promotionRulesSection" class="hidden">
+      <div class="card">
+        <h3>Promotion / Relegation Rules</h3>
+        <p class="hint">Set how many teams move between divisions and how often (every N finalized weeks).</p>
+        <div id="promotionRulesList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ PLAYOFFS TAB ═══════════════════════════════════ -->
+  <section class="tab-pane" id="tab-playoffs">
+    <div class="card">
+      <div class="standings-header">
+        <h2>Playoffs</h2>
+        <div class="btn-row">
+          <button class="btn-primary" id="generatePlayoffsBtn">Generate Playoffs</button>
+          <button class="btn-secondary" id="printNight1Btn">Print Night 1</button>
+          <button class="btn-secondary" id="printNight2Btn">Print Night 2</button>
+        </div>
+      </div>
+      <div id="playoffsError" class="alert alert-error hidden"></div>
+      <div id="playoffRoundsContainer"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ SETTINGS TAB ═══════════════════════════════════ -->
+  <section class="tab-pane" id="tab-settings">
+    <div class="card">
+      <h2>Settings &amp; Export</h2>
+
+      <h3>Export</h3>
+      <div class="form-actions">
+        <button class="btn-primary" id="exportCsvBtn">Download Schedule CSV</button>
+      </div>
+      <p class="hint">Downloads the full schedule in LeagueApps-compatible CSV format.</p>
+
+      <h3 style="margin-top:1.5rem;">State</h3>
+      <div class="form-actions">
+        <button class="btn-secondary" id="settingsLoadBtn">Load State from Disk</button>
+        <button class="btn-secondary" id="settingsSaveBtn">Save State to Disk</button>
+      </div>
+      <div id="settingsMsg" class="hidden"></div>
+    </div>
+
+    <div id="courtAssignSection" class="hidden">
+      <div class="card">
+        <h3>Division Court Assignments</h3>
+        <p class="hint">Set which venue, court, and time block (early/late) each division plays on. Changes take effect on next schedule generation.</p>
+        <div id="courtAssignList"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Edit Match Modal -->
+<div id="editModal" class="modal hidden">
+  <div class="modal-backdrop" id="editModalBackdrop"></div>
+  <div class="modal-box">
+    <h3>Edit Match</h3>
+    <input type="hidden" id="editMatchId">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="editTime">Time</label>
+        <input type="time" id="editTime">
+      </div>
+      <div class="form-group">
+        <label for="editCourt">Court</label>
+        <input type="number" id="editCourt" min="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="editVenue">Venue</label>
+      <input type="text" id="editVenue">
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="editTeamA">Home Team</label>
+        <input type="text" id="editTeamA">
+      </div>
+      <div class="form-group">
+        <label for="editTeamB">Away Team</label>
+        <input type="text" id="editTeamB">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="saveEditBtn">Save</button>
+      <button class="btn-ghost" id="cancelEditBtn">Cancel</button>
+    </div>
+    <div id="editModalError" class="alert alert-error hidden"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
